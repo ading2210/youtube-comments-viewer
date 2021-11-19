@@ -76,7 +76,7 @@ def updatedAfter(updatedAtIso, publishedAtIso):
 
   if diffSeconds > 0:
     updatedAtDisplay = pretty_date(publishedAt,now=updatedAt)
-    updatedAtDisplay = updatedAtDisplay.replace("ago","later").replace("Yesterday", "1 day later publication").replace("just now", "just after posting")
+    updatedAtDisplay = updatedAtDisplay.replace("ago","later").replace("Yesterday", "1 day later").replace("just now", "just after posting")
     updatedAtDisplay = " (Edited: "+updatedAtDisplay+")"
   else:
     updatedAtDisplay = ""
@@ -436,7 +436,7 @@ def replies():
   html = html + '''
     <p style="margin-top: 4px; margin-bottom: 4px"><a href="javascript:history.back()">← Go Back</a> | You are viewing replies.</p>
     <hr style="margin-top:5px; margin-bottom:5px">
-    <table>
+    <table style="max-width:60%">
       <tr>
         <td class="tableData">
           <div>
@@ -476,7 +476,7 @@ def replies():
     updatedAtDisplay = updatedAfter(updatedAtIso,publishedAtIso)
 
     html = html + '''
-    <table>
+    <table style="max-width:50%">
       <tr>
         <td class="tableData">
           <div>
