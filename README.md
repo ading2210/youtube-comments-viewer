@@ -11,3 +11,5 @@ Demo: [https://youtube-comments-fetcher.uniqueostrich18.repl.co/](https://youtub
  - View when a comment or reply was edited
  - Sort comments by date or popularity
   
+### Changelog:
+ - 12/12/21 - The ability to view video dislikes has been removed due to changes to Youtube's API.
