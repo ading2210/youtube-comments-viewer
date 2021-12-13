@@ -15,3 +15,8 @@ Demo: [https://youtube-comments-fetcher.uniqueostrich18.repl.co/](https://youtub
 #### 12/12/21:
  - The ability to view video dislikes has been removed due to changes to Youtube's API.
  - If a video has comments disabled, then it will show text saying that the comments have been disabled instead of showing a generic error message. 
+
+#### 12/13/21:
+ - A proper loading screen has been added.
+ - Commenter thumbnails use lazy loading.
+ - The changelog is now shown on the homepage

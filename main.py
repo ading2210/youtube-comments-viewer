@@ -1,6 +1,9 @@
 import requests, random, replit, urllib.parse
 from flask import Flask, request, redirect
+from urllib.parse import urlencode
+
 import pyyoutube
+import config
 
 from datetime import datetime, timezone
 from dateutil import parser
@@ -97,7 +100,10 @@ def videoHeader(video, videoId):
   videoUploaderUrl = "https://youtube.com/" + videoUploaderUrl
 
   videoUploaderProfile = videoUploader.snippet.thumbnails.high.url
-  videoUploaderSubscribers = format(int(videoUploader.statistics.subscriberCount), ",")
+  if videoUploader.statistics.subscriberCount == None:
+    videoUploaderSubscribers = "Unknown"
+  else:
+    videoUploaderSubscribers = format(int(videoUploader.statistics.subscriberCount), ",")
 
   likeCount = format(int(video.statistics.likeCount), ",")
   #RIP Youtube dislikes...
@@ -141,7 +147,7 @@ def videoHeader(video, videoId):
             <td class="tableData" style="margin-left: 0px">
               <div>
                 <img src="{videoUploaderProfile}" alt="video uploader" style="width:48px;height:48px;">
-              <div>
+              </div>
             </td>
             <td class="tableData">
               <div class=commentHeader>
@@ -189,8 +195,22 @@ def homepage():
     </form>
     <hr>
     <h3>Add this bookmarklet for easy access to this page!</h3>
-    <a href='javascript: function getParameterByName(e,n=window.location.href){e=e.replace(/[\[\]]/g,"\\$&");var t=new RegExp("[?&]"+e+"(=([^&#]*)|&|#|$)").exec(n);return t?t[2]?decodeURIComponent(t[2].replace(/\+/g," ")):"":null}var id=getParameterByName("v");null!=id&&window.open("https://youtube-comments-fetcher.uniqueostrich18.repl.co/comments?id="+id);' target="_parent"><button>Get Youtube Comments</button></a>
+    <a href='javascript: function getParameterByName(e,n=window.location.href){e=e.replace(/[\[\]]/g,"\\$&");var t=new RegExp("[?&]"+e+"(=([^&#]*)|&|#|$)").exec(n);return t?t[2]?decodeURIComponent(t[2].replace(/\+/g," ")):"":null}var id=getParameterByName("v");null!=id&&window.open("https://youtube-comments-fetcher.uniqueostrich18.repl.co/redirect?path=comments&id="+id);' target="_parent"><button>Get Youtube Comments</button></a>
     <p style="font-size: 12px">Drag this into your bookmarks bar to add it. You can click it when on a youtube video to instantly open the comments.</p>
+    <hr>
+    <h3>Changelog:</h3>
+    <h4>12/12/21:</h4>
+    <ul style="text-align: left">
+      <li>The ability to view video dislikes has been removed due to changes to Youtube's API.</li>
+      <li>If a video has comments disabled, then it will show text saying that the comments have been disabled instead of showing a generic error message.</li>
+    </ul>
+    <h4>12/13/21:</h4>
+    <ul style="text-align: left">
+      <li>A proper loading screen has been added.</li>
+      <li>Commenter thumbnails use lazy loading.</li>
+      <li>The changelog is now shown on the homepage.</li>
+    </ul>
+    <p>Github repository: <a href="https://github.com/ading2210/youtube-comments-viewer">https://github.com/ading2210/youtube-comments-viewer</a></p>
   </div>
   '''
   return html
@@ -202,7 +222,7 @@ def form():
     urlData = urllib.parse.urlparse(videoString)
     query = urllib.parse.parse_qs(urlData.query)
     videoId = query["v"][0]
-    return redirect("/comments?id="+videoId, code=302)
+    return redirect("/redirect?path=comments&id="+videoId, code=302)
   except:
     return errorPage("Could not get video ID.")
 
@@ -219,44 +239,7 @@ def comments():
   if order == None:
     order = "relevance"
 
-  html = '''
-  <!DOCTYPE html>
-
-  <style>
-    * {
-      font-family: Arial;
-    }
-    .tableData {
-      vertical-align: top;
-      line-height: 1.2;
-    }
-    .commentText {
-      padding-top: 3px;
-      margin-top: 0px;
-      padding-bottom: 6px;
-      margin-bottom: 0px;
-      word-break: break-word;
-    }
-    .likeData {
-      display: flex;
-      align-items: center;
-      font-size: 13px;
-      height: 16px
-    }
-    .commentHeader {
-      display: inline-block;
-    }
-    .header {
-      display: inline-block;
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-    .noVerticalMargin {
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-  </style>
-  '''
+  html = config.html
 
   try:
     if not page == None:
@@ -272,7 +255,6 @@ def comments():
     video = api.get_video_by_id(video_id=id).items[0]
 
   except pyyoutube.error.PyYouTubeException as e:
-    print(e.message)
     if e.message == 'The video identified by the <code><a href="/youtube/v3/docs/commentThreads/list#videoId">videoId</a></code> parameter has disabled comments.':
       video = api.get_video_by_id(video_id=id).items[0]
       html = html + videoHeader(video, id)
@@ -296,7 +278,7 @@ def comments():
 
   html = html + videoHeader(video, id)
   html = html + '''
-  <p style="margin-top: 4px; margin-bottom: 4px"><a href="/">← Go Back</a> | {commentCountReadable} | Sort by: <a href="/comments?id={id}">Top</a> / <a href="/comments?id={id}&order=time">New</a></p>
+  <p style="margin-top: 4px; margin-bottom: 4px"><a href="/">← Go Back</a> | {commentCountReadable} | Sort by: <a href="/redirect?path=comments&id={id}">Top</a> / <a href="/redirect?path=comments&id={id}&order=time">New</a></p>
   <hr style="margin-top:5px; margin-bottom:5px"> 
   '''.format(id=id, commentCountReadable=commentCountReadable)
 
@@ -321,7 +303,7 @@ def comments():
       <tr>
         <td class="tableData">
           <div>
-            <img src="{profile}" alt="{author}" style="width:64px;height:64px;">
+            <img src="{profile}" alt="{author}" style="width:64px;height:64px;" loading="lazy">
           </div>
         </td>
         <td class="tableData">
@@ -336,7 +318,7 @@ def comments():
           <div class="likeData">
             <svg viewBox="0 0 16 16" focusable="false" style="pointer-events: none; display: block; width: 16px; height: 16px;"><g><path d="M12.42,14A1.54,1.54,0,0,0,14,12.87l1-4.24C15.12,7.76,15,7,14,7H10l1.48-3.54A1.17,1.17,0,0,0,10.24,2a1.49,1.49,0,0,0-1.08.46L5,7H1v7ZM9.89,3.14A.48.48,0,0,1,10.24,3a.29.29,0,0,1,.23.09S9,6.61,9,6.61L8.46,8H14c0,.08-1,4.65-1,4.65a.58.58,0,0,1-.58.35H6V7.39ZM2,8H5v5H2Z"></path></g></svg>
             <p style="padding-left:3px">{likeCount}</p>
-            <a href="/replies?id={commentId}&videoId={id}" style="padding-left:10px">Replies: {replies}</a>
+            <a href="/redirect?path=replies&id={commentId}&videoId={id}" style="padding-left:10px">Replies: {replies}</a>
           </div>
         </td>
       </tr>
@@ -355,7 +337,7 @@ def comments():
 
   if type(prevPageToken) is str:
     html = html + '''
-    <a href="/comments?id={id}&order={order}&page={page}">Previous Page</a>
+    <a href="/redirect?path=comments&id={id}&order={order}&page={page}">Previous Page</a>
     '''.format(id=id, page=prevPageToken, order=order)
   elif not page == None:
     html = html + '''
@@ -369,7 +351,7 @@ def comments():
 
   if type(nextPageToken) is str:
     html = html + '''
-    <a href="/comments?id={id}&order={order}&page={page}">Next Page</a>
+    <a href="/redirect?path=comments&id={id}&order={order}&page={page}">Next Page</a>
     '''.format(id=id, page=nextPageToken, order=order)
 
   html = html + '''
@@ -399,38 +381,7 @@ def replies():
   except pyyoutube.error.PyYouTubeException as e:
     return errorPage(e)
 
-  html = '''
-  <!DOCTYPE html>
-
-  <style>
-    * {
-      font-family: Arial;
-    }
-    .tableData {
-      vertical-align:top;
-      line-height: 1.2;
-    }
-    .commentText {
-      padding-top: 3px;
-      margin-top: 0px;
-      padding-bottom: 6px;
-      margin-bottom: 0px;
-    }
-    .likeData {
-      display: flex;
-      align-items: center;
-      font-size: 13px;
-      height: 16px
-    }
-    .commentHeader {
-      display: inline-block;
-    }
-    .noVerticalMargin {
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-  </style>
-  '''
+  html = config.html
 
   if not videoId == None:
     html = html + videoHeader(video, videoId)
@@ -490,7 +441,7 @@ def replies():
       <tr>
         <td class="tableData">
           <div>
-            <img src="{profile}" alt="{author}" style="width:64px;height:64px;">
+            <img src="{profile}" alt="{author}" style="width:64px;height:64px;" loading="lazy">
           </div>
         </td>
         <td class="tableData">
@@ -542,6 +493,93 @@ def getJson():
 
   commentThreads = api.get_comment_threads(video_id="dQw4w9WgXcQ", count=30, order=order,return_json=True)
   return commentThreads
+
+@app.route('/redirect')
+def loadingScreen():
+  args = dict(request.args)
+  path = args.pop("path")
+  destination = "/{path}?{query}".format(query=urlencode(args),path=path)
+
+  html = config.html
+  html = html + config.videoHeaderStyle
+  html = html + '''
+  <style>
+    * {
+      font-family: Arial;
+    }
+    .mainDiv {
+      width: 50%;
+      text-align: center;
+      margin: auto;
+    }
+  </style>
+  '''
+  html = html + '''
+  <title>Loading comments...</title>
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABRElEQVR42u2Wuw3CMBCGvQELIMEI6WgiwQZkA7IBbJBUtDACEyA2gA2IsgAwAdRpfvgVE14J2LEJFD7pOp/v8/leAj8W4QAcgPLJ/R7YbN5rklgC4EW8cDIBut3LKaGvtKP9apXDfwQ4HIBeD2i36zlUAYpj4HSqAPD97zguU0blAYDhVjFcLoHp1A6EjEQOEASfDfr9W9x2O2A4NAPgowuAwUAP4CqzGdBq1QNgPhgDUI5HYDTSBykAFgs1gyqA+2/pdGoAsFZtAFCiqAZAGNoB2G71vmE+lwBpagawXucVoZsDRRWo9oDx+NU5k8+4DPkXKgZ0RsmyW+ab9AE5H9SrwKbKBMwB2BKbdM6uezeQRDF+m3DueS87g3hYOFQ6oonzp1FcvpCwPm2C8C5Z8/or2fPKVfKCyrNXdVuxA3AA/w5wBviNiB8PHAZ4AAAAAElFTkSuQmCC" type="image/png">
+  '''
+  html = html + '''
+  <meta http-equiv="refresh" content="0; url='{url}'" />
+  '''.format(url=destination)
+  if path == "comments" or path == "replies":
+    if path == "comments":
+      videoId = request.args.get("id")
+    else:
+      videoId = request.args.get("videoId")
+    thumbnailUrl = "http://img.youtube.com/vi/{id}/mqdefault.jpg".format(id=videoId)
+    html = html + '''
+    <table>
+      <tr>
+        <td>
+          <img src="https://img.youtube.com/vi/{id}/mqdefault.jpg" alt="Thumbnail" height=128px>
+        </td>
+        <td class="tableData">
+          <a href="https://youtube.com/watch?v={id}" style="font-size:20px">Loading video information...</a>
+          <p style="font-size:14px; margin-top:2px; margin-bottom:2px ">Unknown views - Uploaded: Unknown</p>
+
+          <div class="videoLikeData">
+            <svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" class="likeIcon" style="pointer-events: none; display: block; width: 24px; height: 24px"><g><path d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43 c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6 C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3 c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"></path></g></svg>
+            <p style="margin-right:5px">Unknown</p>
+          </div>
+
+          <table style="margin-left: 0px; margin-top:4px; border-collapse: collapse">
+            <tr>
+              <td class="tableData" style="margin-left: 0px">
+                <div>
+                  <img src="/static/images/channelicon.png" alt="video uploader" style="width:48px;height:48px;">
+                </div>
+              </td>
+              <td class="tableData">
+                <div class="commentHeader">
+                  <a href="https://youtube.com" target="_blank">Loading channel...</a>
+                  <p style="font-size:12px; margin-top:2px; margin-bottom:2px ">Subscribers: Unknown</p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <hr style="margin-top:2px; margin-bottom:5px">
+    <p style="margin-top: 4px; margin-bottom: 4px"><a href="/">← Go Back</a> | Unknown comments | Sort by: <a href="/comments?id={id}">Top</a> / <a href="/comments?id={id}&order=time">New</a></p>
+    <hr style="margin-top:5px; margin-bottom:0px"> 
+    <table>
+      <tr>
+        <td>
+          <div>
+            <img src="/static/images/loading.gif" alt="loading..." height=32px loading="eager">
+          </div>
+        </td>
+        <td>
+          <div>
+            <p style="margin-top:0px; margin-bottom:0px">Loading comments...</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+    '''.format(id=videoId)
+    
+  return html
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0')
