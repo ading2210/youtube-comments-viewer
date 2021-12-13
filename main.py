@@ -155,7 +155,7 @@ def videoHeader(video, videoId):
     </tr>
   </table>
   <hr style="margin-top:2px; margin-bottom:5px">
-  '''.format(id=id,title=title, views=views, videoPublishedDate=videoPublishedDate, videoUploaderTitle=videoUploaderTitle, videoUploaderProfile=videoUploaderProfile, videoUploaderUrl=videoUploaderUrl, videoUploaderSubscribers=videoUploaderSubscribers,likeCount=likeCount, dislikeCount=dislikeCount)
+  '''.format(id=id,title=title, views=views, videoPublishedDate=videoPublishedDate, videoUploaderTitle=videoUploaderTitle, videoUploaderProfile=videoUploaderProfile, videoUploaderUrl=videoUploaderUrl, videoUploaderSubscribers=videoUploaderSubscribers,likeCount=likeCount)
 
   return html
 
@@ -219,24 +219,6 @@ def comments():
   if order == None:
     order = "relevance"
 
-  try:
-    if not page == None:
-      commentThreadsRaw = api.get_comment_threads(video_id=id, count=30, order=order,page_token=page)
-    else:
-      commentThreadsRaw = api.get_comment_threads(video_id=id, count=30, order=order)
-    commentThreads = commentThreadsRaw.items
-    commentIds = []
-    for commentThread in commentThreads:
-      commentIds.append(commentThread.id)
-    commentIdsString = ",".join(commentIds)
-
-    video = api.get_video_by_id(video_id=id).items[0]
-
-  except pyyoutube.error.PyYouTubeException as e:
-    return errorPage(e)
-
-  comments = api.get_comment_by_id(comment_id=commentIdsString).items
-
   html = '''
   <!DOCTYPE html>
 
@@ -276,7 +258,37 @@ def comments():
   </style>
   '''
 
+  try:
+    if not page == None:
+      commentThreadsRaw = api.get_comment_threads(video_id=id, count=30, order=order,page_token=page)
+    else:
+      commentThreadsRaw = api.get_comment_threads(video_id=id, count=30, order=order)
+    commentThreads = commentThreadsRaw.items
+    commentIds = []
+    for commentThread in commentThreads:
+      commentIds.append(commentThread.id)
+    commentIdsString = ",".join(commentIds)
+
+    video = api.get_video_by_id(video_id=id).items[0]
+
+  except pyyoutube.error.PyYouTubeException as e:
+    print(e.message)
+    if e.message == 'The video identified by the <code><a href="/youtube/v3/docs/commentThreads/list#videoId">videoId</a></code> parameter has disabled comments.':
+      video = api.get_video_by_id(video_id=id).items[0]
+      html = html + videoHeader(video, id)
+      html = html + '''
+      <p style="margin-top: 4px; margin-bottom:4px;"><a href="/">← Go Back</a></p>
+      <hr style="margin-top:5px; margin-bottom:5px;"> 
+      '''
+      html = html + '''
+      <p style="margin-top: 8px;">The video you have specified has disabled comments.</p>
+      '''
+      return html
+    return errorPage(e)
+
+  comments = api.get_comment_by_id(comment_id=commentIdsString).items
   commentCount = video.statistics.commentCount
+
   if not commentCount == 1:
     commentCountReadable = commentCount = format(int(video.statistics.commentCount), ",") + " comments"
   else:
