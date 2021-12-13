@@ -210,7 +210,7 @@ def homepage():
       <li>Commenter thumbnails use lazy loading.</li>
       <li>The changelog is now shown on the homepage.</li>
     </ul>
-    <p>Github repository: <a href="https://github.com/ading2210/youtube-comments-viewer">https://github.com/ading2210/youtube-comments-viewer</a></p>
+    <p><b>Github repository: </b><a href="https://github.com/ading2210/youtube-comments-viewer">https://github.com/ading2210/youtube-comments-viewer</a></p>
   </div>
   '''
   return html
@@ -220,8 +220,12 @@ def form():
   try:
     videoString = request.form['text']
     urlData = urllib.parse.urlparse(videoString)
-    query = urllib.parse.parse_qs(urlData.query)
-    videoId = query["v"][0]
+    domain = urlData.netloc
+    if domain == "youtu.be":
+      videoId = urlData.path.replace("/","",1)
+    else:
+      query = urllib.parse.parse_qs(urlData.query)
+      videoId = query["v"][0]
     return redirect("/redirect?path=comments&id="+videoId, code=302)
   except:
     return errorPage("Could not get video ID.")
