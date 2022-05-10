@@ -183,6 +183,9 @@ def homepage():
         text-align: center;
         margin: auto;
       }
+      .changelog {
+        text-align: center;
+      }
     </style>
   </head>
 
@@ -199,18 +202,24 @@ def homepage():
     <p style="font-size: 12px">Drag this into your bookmarks bar to add it. You can click it when on a youtube video to instantly open the comments.</p>
     <hr>
     <h3>Changelog:</h3>
-    <h4>12/12/21:</h4>
-    <ul style="text-align: left">
-      <li>The ability to view video dislikes has been removed due to changes to Youtube's API.</li>
-      <li>If a video has comments disabled, then it will show text saying that the comments have been disabled instead of showing a generic error message.</li>
-    </ul>
-    <h4>12/13/21:</h4>
-    <ul style="text-align: left">
-      <li>A proper loading screen has been added.</li>
-      <li>Commenter thumbnails use lazy loading.</li>
-      <li>The changelog is now shown on the homepage.</li>
-    </ul>
-    <p><b>Github repository: </b><a href="https://github.com/ading2210/youtube-comments-viewer">https://github.com/ading2210/youtube-comments-viewer</a></p>
+    <div class="changelog">
+      <h4>5/10/22</h4>
+      <ul style="text-align: left">
+        <li>Fixed a bug where attempting to view the replies to a comment would return an error.</li>
+      </ul>
+      <h4>12/12/21:</h4>
+      <ul style="text-align: left">
+        <li>The ability to view video dislikes has been removed due to changes to Youtube's API.</li>
+        <li>If a video has comments disabled, then it will show text saying that the comments have been disabled instead of showing a generic error message.</li>
+      </ul>
+      <h4>12/13/21:</h4>
+      <ul style="text-align: left">
+        <li>A proper loading screen has been added.</li>
+        <li>Commenter thumbnails use lazy loading.</li>
+        <li>The changelog is now shown on the homepage.</li>
+      </ul>
+      <p><b>Github repository: </b><a href="https://github.com/ading2210/youtube-comments-viewer">https://github.com/ading2210/youtube-comments-viewer</a></p>
+    </div>
   </div>
   '''
   return html
@@ -371,9 +380,9 @@ def replies():
   videoId = request.args.get("videoId")
   try:
     if not page == None:
-      commentsRaw = api.get_comments(parent_id=id, count=500, limit=500, page_token=page)
+      commentsRaw = api.get_comments(parent_id=id, count=None, page_token=page)
     else:
-      commentsRaw = api.get_comments(parent_id=id, count=500, limit=500)
+      commentsRaw = api.get_comments(parent_id=id, count=None)
     comments = commentsRaw.items
     nextPageToken = commentsRaw.nextPageToken
     print(len(comments))
@@ -383,6 +392,7 @@ def replies():
     if not videoId == None:
       video = api.get_video_by_id(video_id=videoId).items[0]
   except pyyoutube.error.PyYouTubeException as e:
+    print(e)
     return errorPage(e)
 
   html = config.html
